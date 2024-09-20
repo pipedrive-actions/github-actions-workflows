@@ -1,0 +1,180 @@
+name: Package tests
+on:
+  workflow_call:
+    inputs:
+      revision:
+        description: The branch, tag or commit hash to checkout.
+        type: string
+        required: true
+      supported_versions:
+        description: A JSON array with the other supported versions
+        type: string
+        required: true
+      skip_functional_tests:
+        description: Skip functional tests
+        type: boolean
+        required: false
+        default: false
+      timeout_minutes:
+        description: Timeout of the job in minutes. Defaults 60
+        type: number
+        required: false
+        default: 60
+      runner:
+        description: Label for GitHub-hosted runner to use. Defaults to ubuntu-latest
+        type: string
+        required: false
+        default: ubuntu-latest
+
+    secrets:
+      NPM_TOKEN:
+        required: true
+      PD_GHA_BOT_APPLICATION_PRIVATE_KEY_PEM:
+        required: true
+
+env:
+  platform: node
+
+jobs:
+  check-supported-versions:
+    name: Check Supported Versions
+    runs-on: ${{ inputs.runner }}
+    outputs:
+      other_supported_versions: ${{ steps.set-versions.outputs.other_supported_versions }}
+    steps:
+      - name: Get Pipedrive GitHub Actions Bot Token
+        uses: actions/create-github-app-token@v1
+        id: get-workflow-token
+        with:
+          app-id:  ${{ vars.PD_GHA_BOT_APPLICATION_ID }}
+          private-key:  ${{ secrets.PD_GHA_BOT_APPLICATION_PRIVATE_KEY_PEM }}
+          owner: ${{ github.repository_owner }}
+
+      - name: Checkout ${{ github.repository }}
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.revision }}
+
+      - name: Set Other Supported Versions
+        id: set-versions
+        shell: bash
+        env:
+          NVMRC_PATH: ${{ github.workspace }}/.nvmrc
+          SUPPORTED_VERSIONS_INPUT: ${{ inputs.supported_versions }}
+        run: |
+          if [[ -f "${NVMRC_PATH}" ]]; then
+            default_version=$(cat "${NVMRC_PATH}")
+            echo "default_version=${default_version}"
+            other_supported_versions=$(echo "${SUPPORTED_VERSIONS_INPUT}" | jq -c "map(select(. != (""${default_version}"" | tonumber)))")
+          else
+            echo "nvmrc does not exist, setting default_version to inputs.supported_versions"
+            other_supported_versions="${SUPPORTED_VERSIONS_INPUT}"
+          fi
+          echo "other_supported_versions=${other_supported_versions}"
+          echo "other_supported_versions=${other_supported_versions}" >> "$GITHUB_OUTPUT"
+
+  run-base-version-tests:
+    name: Run Unit & Functional Tests (Base Version)
+    runs-on: ${{ inputs.runner }}
+    timeout-minutes: ${{ inputs.timeout_minutes }}
+    steps:
+      - name: Get Pipedrive GitHub Actions Bot Token
+        uses: actions/create-github-app-token@v1
+        id: get-workflow-token
+        with:
+          app-id:  ${{ vars.PD_GHA_BOT_APPLICATION_ID }}
+          private-key:  ${{ secrets.PD_GHA_BOT_APPLICATION_PRIVATE_KEY_PEM }}
+          owner: ${{ github.repository_owner }}
+
+      - name: Checkout ${{ github.repository }}
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.revision }}
+          persist-credentials: false
+
+      - name: Checkout gha-setup
+        uses: actions/checkout@v4
+        with:
+          repository: pipedrive/gha-setup
+          path: gha-setup
+          ref: master
+          token: ${{ secrets.GH_PAT }}
+
+      - name: Setup Platform
+        uses: ./gha-setup/actions/platform/setup@master
+        with:
+          platform: ${{ env.platform }}
+          npm_token: ${{ secrets.NPM_TOKEN }}
+          gha_access_token: ${{ steps.get-workflow-token.outputs.token}}
+
+      - name: Build Source
+        uses: ./gha-setup/actions/platform/build-code@master
+        with:
+          platform: ${{ env.platform }}
+
+      - name: Run Unit Tests
+        uses: ./gha-setup/actions/platform/run-unit-tests@master
+        with:
+          platform: ${{ env.platform }}
+
+      - name: Trigger Functional tests
+        if: ${{ !inputs.skip_functional_tests }}
+        id: trigger-functional-tests
+        uses: ./gha-setup/actions/dispatch-tests@master
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          test_type: functional
+          revision: ${{ inputs.revision }}
+          caller: npm-public-publish
+          measure_coverage: false
+
+  run-other-supported-versions-tests:
+    name: Run Unit Tests (Node-${{ matrix.version }})
+    needs: check-supported-versions
+    if: ${{ needs.check-supported-versions.outputs.other_supported_versions != '[]' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        version: ${{fromJson(needs.check-supported-versions.outputs.other_supported_versions)}}
+    timeout-minutes: ${{ inputs.timeout_minutes }}
+    runs-on: ${{ inputs.runner }}
+    steps:
+      - name: Get Pipedrive GitHub Actions Bot Token
+        uses: actions/create-github-app-token@v1
+        id: get-workflow-token
+        with:
+          app-id:  ${{ vars.PD_GHA_BOT_APPLICATION_ID }}
+          private-key:  ${{ secrets.PD_GHA_BOT_APPLICATION_PRIVATE_KEY_PEM }}
+          owner: ${{ github.repository_owner }}
+
+      - name: Checkout ${{ github.repository }}
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.revision }}
+          persist-credentials: false
+
+      - name: Checkout gha-setup
+        uses: actions/checkout@v4
+        with:
+          repository: pipedrive/gha-setup
+          path: gha-setup
+          ref: master
+          token: ${{ secrets.GH_PAT }}
+
+      - name: Setup Platform
+        uses: ./gha-setup/actions/platform/setup@master
+        with:
+          platform: ${{ env.platform }}
+          npm_token: ${{ secrets.NPM_TOKEN }}
+          gha_access_token: ${{ steps.get-workflow-token.outputs.token}}
+          node_version: ${{ matrix.version }}
+
+      - name: Build Source
+        uses: ./gha-setup/actions/platform/build-code@master
+        with:
+          platform: ${{ env.platform }}
+
+      - name: Run Unit Tests
+        uses: ./gha-setup/actions/platform/run-unit-tests@master
+        with:
+          platform: ${{ env.platform }}
