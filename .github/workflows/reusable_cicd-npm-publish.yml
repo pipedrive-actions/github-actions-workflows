@@ -1,0 +1,69 @@
+name: NPM Publish
+on:
+  workflow_call:
+    inputs:
+      revision:
+        description: The branch to checkout.
+        type: string
+        required: false
+      supported_versions:
+        description: A JSON array with the other supported versions
+        type: string
+        default: '[18, 20]'
+        required: false
+      skip_functional_tests:
+        description: Skip functional tests
+        type: boolean
+        required: false
+        default: false
+      timeout_minutes:
+        description: Timeout of the job in minutes. Defaults 60
+        type: number
+        required: false
+        default: 60
+      publish_timeout_seconds:
+        description: Seconds to wait before the attempt to publish the package times outs. Defaults to 180
+        type: number
+        default: 180
+        required: false
+      runner:
+        description: Label for GitHub-hosted runner to use. Defaults to ubuntu-latest
+        type: string
+        required: false
+        default: ubuntu-latest
+env:
+  platform: node
+
+jobs:
+  package-checks:
+    name : Package Checks
+    uses: pipedrive-actions/github-actions-workflows/.github/workflows/reusable_cicd-npm-package-checks.yml@master
+    with:
+      revision: ${{ inputs.revision }}
+      runner: ${{ inputs.runner }}
+    secrets: inherit
+
+  package-test:
+    needs: package-checks
+    name: Package Test
+    uses: pipedrive-actions/github-actions-workflows/.github/workflows/reusable_cicd-npm-package-test.yml@master
+    with:
+      revision: ${{ needs.package-checks.outputs.revision }}
+      supported_versions: ${{ inputs.supported_versions }}
+      skip_functional_tests: ${{ inputs.skip_functional_tests }}
+      timeout_minutes: ${{ inputs.timeout_minutes }}
+      runner: ${{ inputs.runner }}
+    secrets: inherit
+
+  package-publish:
+    needs:
+      - package-test
+      - package-checks
+    name: Package Publish
+    uses: pipedrive-actions/github-actions-workflows/.github/workflows/reusable_cicd-npm-package-publish.yml@master
+    with:
+      revision: ${{inputs.revision }}
+      version: ${{ needs.package-checks.outputs.version }}
+      runner: ${{ inputs.runner }}
+      publish_timeout_seconds: ${{ inputs.publish_timeout_seconds }}
+    secrets: inherit
