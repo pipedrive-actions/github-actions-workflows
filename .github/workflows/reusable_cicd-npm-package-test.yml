@@ -42,6 +42,7 @@ jobs:
     outputs:
       other_supported_versions: ${{ steps.set-versions.outputs.other_supported_versions }}
     steps:
+      # TODO: remove this step, the output is not used
       - name: Get Pipedrive GitHub Actions Bot Token
         uses: actions/create-github-app-token@v1
         id: get-workflow-token
@@ -95,6 +96,7 @@ jobs:
       - name: Setup Platform
         uses: pipedrive-actions/github-actions-workflows/actions/setup-node@master
         with:
+          #TODO: Remove the NPM Token and GHA_ACCESS_TOKEN
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
           GHA_ACCESS_TOKEN: ${{ steps.get-workflow-token.outputs.token}}
 
@@ -115,7 +117,7 @@ jobs:
         uses: ./gha-setup/actions/platform/run-unit-tests@master
         with:
           platform: ${{ env.platform }}
-
+    
       - name: Trigger Functional tests
         if: ${{ !inputs.skip_functional_tests }}
         id: trigger-functional-tests
@@ -155,6 +157,8 @@ jobs:
       - name: Setup Platform
         uses: pipedrive-actions/github-actions-workflows/actions/setup-node@master
         with:
+
+                    #TODO: Remove the NPM Token and GHA_ACCESS_TOKEN
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
           GHA_ACCESS_TOKEN: ${{ steps.get-workflow-token.outputs.token}}
           node_version: ${{ matrix.version }}
