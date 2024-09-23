@@ -1,0 +1,118 @@
+name: Setup Node.js
+description: Setup Node.js
+inputs:
+  NPM_TOKEN:
+    description: 'NPM_TOKEN'
+    required: true
+  GHA_ACCESS_TOKEN:
+    description: 'GHA_ACCESS_TOKEN'
+    required: true
+  directory:
+    description: 'Project directory'
+    required: false
+    default: './'
+  ignore-scripts:
+    description: 'ignore npm scripts'
+    required: false
+    default: 'false'
+  node_version:
+    description: 'Node version if not using .nvmrc file'
+    required: false
+  skip-post-run:
+    description: 'Skip post-run'
+    required: false
+    default: 'false'
+runs:
+  using: "composite"
+  steps:
+    - name: Setup Node
+      uses: actions/setup-node@v4
+      with:
+        node-version-file: ${{ inputs.directory }}.nvmrc
+        node-version: ${{ inputs.node_version }}
+        registry-url: https://npm-registry-proxy.pipedrive.tools
+        scope: "@pipedrive"
+        cache: 'npm'
+        cache-dependency-path: ${{ inputs.directory }}package-lock.json
+
+    - name: Use node_modules cache
+      if: inputs.ignore-scripts == 'true'
+      id: cache-node-modules
+      uses: actions/cache@v4
+      with:
+        path: ${{ inputs.directory }}node_modules
+        key: node-modules-${{ runner.os }}-${{ inputs.node_version || '' }}-${{ hashFiles('**/package-lock.json') }}
+
+    - name: Add git URLs
+      shell: bash
+      working-directory: ${{ inputs.directory }}
+      run: |
+        git config --global --add url."https://x-access-token:${{ inputs.GHA_ACCESS_TOKEN }}@github.com/".insteadOf "ssh://git@github.com/"
+        git config --global --add url."https://x-access-token:${{ inputs.GHA_ACCESS_TOKEN }}@github.com/".insteadOf "https://github.com/"
+        git config --global --add url."https://x-access-token:${{ inputs.GHA_ACCESS_TOKEN }}@github.com/".insteadOf "git@github.com:"
+        git config --global --add url."https://x-access-token:${{ inputs.GHA_ACCESS_TOKEN }}@github.com/".insteadOf "git+ssh://git@github.com/"
+
+    - name: Validate context cypress
+      id: validation-cypress
+      shell: bash
+      run: |
+        if [[ $(jq '.devDependencies | has("cypress")' ${{ inputs.directory }}package.json) == "true" ]]
+        then
+          echo "valid=true" >> $GITHUB_OUTPUT
+          CYPRESS_VERSION=$(jq '.devDependencies.cypress' -r ${{ inputs.directory }}package.json)
+          CYPRESS_VERSION=$(sed 's/[^0-9|.]*//g' <<<"$CYPRESS_VERSION")
+          CYPRESS_VERSION="${CYPRESS_INSTALL_BINARY:-$CYPRESS_VERSION}"
+          CYPRESS_CACHE="${CYPRESS_CACHE_FOLDER:-~/.cache/Cypress}"
+          echo "path=$CYPRESS_CACHE" >> $GITHUB_OUTPUT
+          echo "version=$CYPRESS_VERSION" >> $GITHUB_OUTPUT
+        else
+          echo "valid=false" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Setup Cache cypress
+      if: ${{ steps.validation-cypress.outputs.valid == 'true'}}
+      uses: actions/cache@v4
+      with:
+        path: ${{steps.validation-cypress.outputs.path}}/${{ steps.validation-cypress.outputs.version }}
+        key: cypress-${{ runner.os }}-${{ steps.validation-cypress.outputs.version }}
+
+    - name: Install dependencies
+      if: inputs.ignore-scripts == 'false' || steps.cache-node-modules.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+          [ -e package-lock.json ] && COMMAND='ci' || COMMAND='i';
+          [[ ${{ inputs.ignore-scripts }} == true ]] && FLAGS='--ignore-scripts' || FLAGS='';
+          echo "Running: npm $COMMAND $FLAGS";
+          npm $COMMAND $FLAGS
+      working-directory: ${{ inputs.directory }}
+      env:
+        NODE_AUTH_TOKEN: ${{ inputs.NPM_TOKEN }}
+
+    - name: Validate context jest
+      id: validation-jest
+      shell: bash
+      working-directory: ${{inputs.directory}}
+      run: |
+        if [[ $(jq '.devDependencies | has("jest")' package.json) == "true" &&  "$GITHUB_EVENT_NAME" == "pull_request" ]]
+        then
+          echo "valid=true" >> $GITHUB_OUTPUT
+          JEST_CACHE=$(npx jest jest --showConfig |jq '.configs[0].cacheDirectory' -r)
+          CACHE=${JEST_CACHE#"$PWD/"}
+          echo "path=$CACHE" >> $GITHUB_OUTPUT
+        else
+          echo "valid=false" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Setup Cache jest
+      if: ${{ steps.validation-jest.outputs.valid == 'true'}}
+      uses: actions/cache@v4
+      with:
+        path: ${{steps.validation-jest.outputs.path}}
+        key: jest-cache-${{github.event.number}}
+
+    - name: Clean git config
+      if: inputs.skip-post-run == 'false'
+      uses: webiny/action-post-run@3.1.0
+      with:
+        run: git config --global --unset-all url."https://x-access-token:${{ inputs.GHA_ACCESS_TOKEN }}@github.com/".insteadOf
+        working-directory: ${{ inputs.directory }}
