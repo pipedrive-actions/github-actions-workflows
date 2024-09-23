@@ -53,6 +53,7 @@ jobs:
       - name: Check Pull Request against defined rules
         uses: ./gha-setup/actions/pull-request-check@master
         with:
+          #TODO: Try this with secrets.GITHUB_TOKEN
           github-token: ${{ steps.get-workflow-token.outputs.token }}
 
       - name: Update Branch from master
@@ -100,6 +101,7 @@ jobs:
         id: npm-package-version
         uses: ./gha-setup/actions/npm-package-label-parser@master
 
+      #TODO: Remove nedora execution, not needed
       - name: Get Neodora Bot Token
         id: get-neodora-token
         uses: actions/create-github-app-token@v1
