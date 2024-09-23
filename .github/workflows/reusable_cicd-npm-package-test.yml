@@ -92,20 +92,19 @@ jobs:
           ref: ${{ inputs.revision }}
           persist-credentials: false
 
+      - name: Setup Platform
+        uses: pipedrive-actions/github-actions-workflows/actions/setup-node@master
+        with:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          GHA_ACCESS_TOKEN: ${{ steps.get-workflow-token.outputs.token}}
+
       - name: Checkout gha-setup
         uses: actions/checkout@v4
         with:
           repository: pipedrive/gha-setup
           path: gha-setup
           ref: master
-          token: ${{ secrets.GH_PAT }}
-
-      - name: Setup Platform
-        uses: ./gha-setup/actions/platform/setup@master
-        with:
-          platform: ${{ env.platform }}
-          npm_token: ${{ secrets.NPM_TOKEN }}
-          gha_access_token: ${{ steps.get-workflow-token.outputs.token}}
+          token: ${{ secrets.GHA_SETUP_ACCESS_TOKEN }}
 
       - name: Build Source
         uses: ./gha-setup/actions/platform/build-code@master
@@ -153,21 +152,20 @@ jobs:
           ref: ${{ inputs.revision }}
           persist-credentials: false
 
+      - name: Setup Platform
+        uses: pipedrive-actions/github-actions-workflows/actions/setup-node@master
+        with:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          GHA_ACCESS_TOKEN: ${{ steps.get-workflow-token.outputs.token}}
+          node_version: ${{ matrix.version }}
+
       - name: Checkout gha-setup
         uses: actions/checkout@v4
         with:
           repository: pipedrive/gha-setup
           path: gha-setup
           ref: master
-          token: ${{ secrets.GH_PAT }}
-
-      - name: Setup Platform
-        uses: ./gha-setup/actions/platform/setup@master
-        with:
-          platform: ${{ env.platform }}
-          npm_token: ${{ secrets.NPM_TOKEN }}
-          gha_access_token: ${{ steps.get-workflow-token.outputs.token}}
-          node_version: ${{ matrix.version }}
+          token: ${{ secrets.GHA_SETUP_ACCESS_TOKEN }}
 
       - name: Build Source
         uses: ./gha-setup/actions/platform/build-code@master
