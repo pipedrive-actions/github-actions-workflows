@@ -36,7 +36,7 @@ on:
       PD_GHA_BOT_APPLICATION_PRIVATE_KEY_PEM:
         description: Pipedrive GitHub Actions Bot Application Private Key
         required: true
-      NPM_PUBLISH_TOKEN:
+      NPM_PUBLIC_PUBLISH_TOKEN:
         description: NPM token to use for publishing
         required: true
 
@@ -183,7 +183,7 @@ jobs:
       - name: Publish to NPM
         uses: pipedrive/gha-command-retry@v3
         env:
-          NPM_TOKEN: ${{ secrets.NPM_PUBLISH_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_PUBLIC_PUBLISH_TOKEN }}
           VERSION: ${{ inputs.version }}
           PUBLISH_ACCESS: ${{ steps.read-package-json.outputs.publish_access }}
         with:
