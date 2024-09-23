@@ -48,7 +48,7 @@ jobs:
           repository: pipedrive/gha-setup
           path: gha-setup
           ref: master
-          token: ${{ secrets.GH_PAT }}
+          token: ${{ secrets.GHA_SETUP_ACCESS_TOKEN }}
 
       - name: Check Pull Request against defined rules
         uses: ./gha-setup/actions/pull-request-check@master
