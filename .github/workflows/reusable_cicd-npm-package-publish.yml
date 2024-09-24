@@ -27,12 +27,6 @@ on:
         required: false
 
     secrets:
-      NPM_TOKEN:
-        description: NPM token to access the private registry
-        required: true
-      NPM_GRANT_ACCESS_TOKEN:
-        description: NPM token to use for granting access
-        required: true
       PD_GHA_BOT_APPLICATION_PRIVATE_KEY_PEM:
         description: Pipedrive GitHub Actions Bot Application Private Key
         required: true
@@ -198,17 +192,6 @@ jobs:
             # Cannot use double quoting because of a bug in npm that assumes the "" as input
             # shellcheck disable=SC2086
             npm publish ${distTag} ${access}
-
-      - name: Set Packages Access
-        if: ${{ steps.read-package-json.outputs.publish_access != 'public' }}
-        env:
-          NPM_TOKEN: ${{ secrets.NPM_GRANT_ACCESS_TOKEN }}
-          PACKAGE_NAME: ${{ steps.read-package-json.outputs.package_name }}
-        shell: bash
-        run: |
-          echo "Granting access to pipedrive:developers and pipedrive:publishers"
-          npm access grant read-only pipedrive:developers "${PACKAGE_NAME}"
-          npm access grant read-write pipedrive:publishers "${PACKAGE_NAME}"
 
       - name: Delete Branch
         # Delete remote branch may fail if repo is configured to automatically delete head branches.
