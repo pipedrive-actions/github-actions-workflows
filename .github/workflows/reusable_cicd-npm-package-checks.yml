@@ -19,9 +19,6 @@ on:
       version:
         description: Version to bump
         value: ${{ jobs.pre-publish.outputs.version }}
-    secrets:
-      PD_GHA_BOT_APPLICATION_PRIVATE_KEY_PEM:
-        required: true
 
 jobs:
   pre-publish:
@@ -30,14 +27,6 @@ jobs:
       revison: ${{ steps.rev-parse-revision.outputs.commit }}
       version: ${{ steps.npm-package-version.outputs.version }}
     steps:
-      - name: Get Pipedrive GitHub Actions Bot Token
-        uses: actions/create-github-app-token@v1
-        id: get-workflow-token
-        with:
-          app-id:  ${{ vars.PD_GHA_BOT_APPLICATION_ID }}
-          private-key:  ${{ secrets.PD_GHA_BOT_APPLICATION_PRIVATE_KEY_PEM }}
-          owner: ${{ github.repository_owner }}
-
       - name: Checkout gha-setup
         uses: actions/checkout@v4
         with:

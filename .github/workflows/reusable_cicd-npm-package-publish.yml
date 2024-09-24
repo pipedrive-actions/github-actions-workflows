@@ -27,9 +27,6 @@ on:
         required: false
 
     secrets:
-      PD_GHA_BOT_APPLICATION_PRIVATE_KEY_PEM:
-        description: Pipedrive GitHub Actions Bot Application Private Key
-        required: true
       NPM_PUBLIC_PUBLISH_TOKEN:
         description: NPM token to use for publishing
         required: true
@@ -38,20 +35,12 @@ jobs:
   package-publish:
     runs-on: ${{ inputs.runner }}
     steps:
-      - name: Get Pipedrive GitHub Actions Bot Token
-        uses: actions/create-github-app-token@v1
-        id: get-workflow-token
-        with:
-          app-id:  ${{ vars.PD_GHA_BOT_APPLICATION_ID }}
-          private-key:  ${{ secrets.PD_GHA_BOT_APPLICATION_PRIVATE_KEY_PEM }}
-          owner: ${{ github.repository_owner }}
-
       - name: Checkout ${{ github.repository }}
         uses: actions/checkout@v4
         with:
           ref: ${{ inputs.revision || github.ref }}
           fetch-depth: 0
-          token: ${{ steps.get-workflow-token.outputs.token}}
+          token: ${{ secrets.GITHUB_TOKEN }}
           persist-credentials: false
 
       - name: Checkout gha-setup
