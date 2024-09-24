@@ -22,10 +22,6 @@ on:
     secrets:
       PD_GHA_BOT_APPLICATION_PRIVATE_KEY_PEM:
         required: true
-      NEODORA_BOT_APPLICATION_PRIVATE_KEY_PEM:
-        required: true
-      SONAR_TOKEN:
-        required: true
 
 jobs:
   pre-publish:
@@ -100,25 +96,3 @@ jobs:
       - name: Parse NPM Package Version
         id: npm-package-version
         uses: ./gha-setup/actions/npm-package-label-parser@master
-
-      #TODO: Remove nedora execution, not needed
-      - name: Get Neodora Bot Token
-        id: get-neodora-token
-        uses: actions/create-github-app-token@v1
-        with:
-          app-id:  ${{ vars.NEODORA_BOT_APPLICATION_ID }}
-          private-key:  ${{ secrets.NEODORA_BOT_APPLICATION_PRIVATE_KEY_PEM }}
-          owner: ${{ github.repository_owner }}
-
-      # run NEODORA
-      - name: Policy checks
-        uses: docker://pipedrive/neodora:latest
-        with:
-          args: neodora .  --fail-on-exit
-        env:
-          GITHUB_API: ${{ steps.get-neodora-token.outputs.token }}
-          REPO_NAME: ${{ github.event.repository.name }}
-          GIT_COMMIT: ${{ steps.rev-parse-revision.outputs.commit}}
-          JOB_URL: ${{github.server_url}}/${{github.repository}}/actions/runs/${{github.run_id}}
-          GIT_USER: neodora[bot]
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
