@@ -49,8 +49,7 @@ jobs:
       - name: Check Pull Request against defined rules
         uses: ./gha-setup/actions/pull-request-check@master
         with:
-          #TODO: Try this with secrets.GITHUB_TOKEN
-          github-token: ${{ steps.get-workflow-token.outputs.token }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Update Branch from master
         uses: actions/github-script@v7

@@ -72,10 +72,7 @@ jobs:
         uses: ./gha-setup/actions/set-git-config-gha@master
 
       - name: Setup Node.js
-        uses: ./gha-setup/actions/setup-node@master
-        with:
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-          GHA_ACCESS_TOKEN: ${{ steps.get-workflow-token.outputs.token}}
+        uses: pipedrive-actions/github-actions-workflows/actions/setup-node@master
 
       - name: Add Changelog Record
         if: ${{github.event.pull_request.user.login == 'dependabot[bot]'}}
