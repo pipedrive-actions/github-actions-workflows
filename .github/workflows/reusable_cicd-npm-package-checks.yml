@@ -36,7 +36,7 @@ jobs:
           token: ${{ secrets.GHA_SETUP_ACCESS_TOKEN }}
 
       - name: Check Pull Request against defined rules
-        uses: ./gha-setup/actions/pull-request-check@master
+        uses: ./gha-setup/actions/pull-request-check
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -79,8 +79,8 @@ jobs:
           echo "commit=$commit" >> "$GITHUB_OUTPUT"
 
       - name: NPM Package Checks
-        uses: ./gha-setup/actions/npm-package-checks@master
+        uses: ./gha-setup/actions/npm-package-checks
 
       - name: Parse NPM Package Version
         id: npm-package-version
-        uses: ./gha-setup/actions/npm-package-label-parser@master
+        uses: ./gha-setup/actions/npm-package-label-parser

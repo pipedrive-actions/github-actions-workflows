@@ -82,19 +82,19 @@ jobs:
           token: ${{ secrets.GHA_SETUP_ACCESS_TOKEN }}
 
       - name: Build Source
-        uses: ./gha-setup/actions/platform/build-code@master
+        uses: ./gha-setup/actions/platform/build-code
         with:
           platform: ${{ env.platform }}
 
       - name: Run Unit Tests
-        uses: ./gha-setup/actions/platform/run-unit-tests@master
+        uses: ./gha-setup/actions/platform/run-unit-tests
         with:
           platform: ${{ env.platform }}
     
       - name: Trigger Functional tests
         if: ${{ !inputs.skip_functional_tests }}
         id: trigger-functional-tests
-        uses: ./gha-setup/actions/dispatch-tests@master
+        uses: ./gha-setup/actions/dispatch-tests
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           test_type: functional
@@ -133,11 +133,11 @@ jobs:
           token: ${{ secrets.GHA_SETUP_ACCESS_TOKEN }}
 
       - name: Build Source
-        uses: ./gha-setup/actions/platform/build-code@master
+        uses: ./gha-setup/actions/platform/build-code
         with:
           platform: ${{ env.platform }}
 
       - name: Run Unit Tests
-        uses: ./gha-setup/actions/platform/run-unit-tests@master
+        uses: ./gha-setup/actions/platform/run-unit-tests
         with:
           platform: ${{ env.platform }}
