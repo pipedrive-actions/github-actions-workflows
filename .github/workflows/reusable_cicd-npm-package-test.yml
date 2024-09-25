@@ -71,7 +71,7 @@ jobs:
           persist-credentials: false
 
       - name: Setup Platform
-        uses: pipedrive-actions/github-actions-workflows/actions/setup-node@master
+        uses: pipedrive-actions/github-actions-workflows/actions/setup-node@add-reusable-workflows
 
       - name: Checkout gha-setup
         uses: actions/checkout@v4
@@ -120,7 +120,7 @@ jobs:
           persist-credentials: false
 
       - name: Setup Platform
-        uses: pipedrive-actions/github-actions-workflows/actions/setup-node@master
+        uses: pipedrive-actions/github-actions-workflows/actions/setup-node@add-reusable-workflows
         with:
           node_version: ${{ matrix.version }}
 
