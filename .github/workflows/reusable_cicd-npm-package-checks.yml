@@ -35,6 +35,10 @@ jobs:
           private-key:  ${{ secrets.PD_PUBLIC_GHA_BOT_APPLICATION_PRIVATE_KEY_PEM }}
           owner: ${{ github.repository_owner }}
 
+      - name: Debug Token
+        run: |
+          echo "Token: ${{ steps.get-workflow-token.outputs.token }}"
+
       - name: Checkout gha-setup
         uses: actions/checkout@v4
         with:
