@@ -34,6 +34,7 @@ jobs:
           app-id:  ${{ vars.PD_PUBLIC_GHA_BOT_APPLICATION_ID }}
           private-key:  ${{ secrets.PD_PUBLIC_GHA_BOT_APPLICATION_PRIVATE_KEY_PEM }}
           owner: ${{ github.repository_owner }}
+          repositories: test-public-npm-module
 
       - name: Checkout gha-setup
         uses: actions/checkout@v4
