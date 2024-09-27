@@ -20,6 +20,10 @@ on:
         description: Version to bump
         value: ${{ jobs.pre-publish.outputs.version }}
 
+    secrets:
+      PD_PUBLIC_GHA_BOT_APPLICATION_PRIVATE_KEY_PEM:
+        required: true
+
 jobs:
   pre-publish:
     runs-on: ${{ inputs.runner }}
