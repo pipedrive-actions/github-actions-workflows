@@ -119,6 +119,7 @@ jobs:
           GITHUB_BASE_REF: ${{ github.event.pull_request.base.ref }}
           VERSION: ${{ steps.bump-version.outputs.version }}
           REPO: ${{ github.repository }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           if ! git push origin "${GITHUB_BASE_REF}" --tags --no-verify
           then
