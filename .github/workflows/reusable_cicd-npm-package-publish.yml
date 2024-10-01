@@ -116,12 +116,12 @@ jobs:
 
       - name: Fetch the user who triggered the workflow
         run: |
-          echo "user=$(jq -r '.pusher.name' < ${GITHUB_EVENT_PATH})" >> $GITHUB_ENV
+          echo "USER=$(jq -r '.pusher.name' < ${GITHUB_EVENT_PATH})" >> $GITHUB_ENV
 
       - name: Add user to bypass list
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          USER: ${{ env.user }}
+          USER: ${{ env.USER }}
         run: |
           curl -X PUT -H "Authorization: token ${GITHUB_TOKEN}" \
           -H "Accept: application/vnd.github.v3+json" \
@@ -170,7 +170,7 @@ jobs:
         if: success() || failure()
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          USER: ${{ env.user }}
+          USER: ${{ env.USER }}
         run: |
           curl -X PUT -H "Authorization: token ${GITHUB_TOKEN}" \
           -H "Accept: application/vnd.github.v3+json" \
