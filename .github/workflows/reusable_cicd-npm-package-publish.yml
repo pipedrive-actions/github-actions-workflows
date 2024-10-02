@@ -30,6 +30,8 @@ on:
       NPM_PUBLIC_PUBLISH_TOKEN:
         description: NPM token to use for publishing
         required: true
+      PD_PUBLIC_GHA_BOT_APPLICATION_PRIVATE_KEY_PEM:
+        required: true      
 
 jobs:
   package-publish:
@@ -114,12 +116,20 @@ jobs:
             echo "Tagging merge commit with ${VERSION}"
             git tag "${VERSION}"
 
+      - name: Get Pipedrive GitHub Actions Bot Token
+        uses: actions/create-github-app-token@v1
+        id: get-workflow-token
+        with:
+          app-id: ${{ vars.PD_PUBLIC_GHA_BOT_APPLICATION_ID }}
+          private-key: ${{ secrets.PD_PUBLIC_GHA_BOT_APPLICATION_PRIVATE_KEY_PEM }}
+          owner: ${{ github.repository_owner }}
+
       - name: Push to GitHub
         env:
           GITHUB_BASE_REF: ${{ github.event.pull_request.base.ref }}
           VERSION: ${{ steps.bump-version.outputs.version }}
           REPO: ${{ github.repository }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ steps.get-workflow-token.outputs.token }}
         run: |
           git remote set-url origin https://x-access-token:${GITHUB_TOKEN}@github.com/${REPO}.git
           if ! git push origin "${GITHUB_BASE_REF}" --tags --no-verify
