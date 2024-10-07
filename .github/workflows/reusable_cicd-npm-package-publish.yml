@@ -57,7 +57,7 @@ jobs:
         uses: ./gha-setup/actions/set-git-config-gha
 
       - name: Setup Node.js
-        uses: pipedrive-actions/github-actions-workflows/actions/setup-node@add-reusable-workflows
+        uses: pipedrive-actions/github-actions-workflows/actions/setup-node@master
 
       - name: Add Changelog Record
         if: ${{github.event.pull_request.user.login == 'dependabot[bot]'}}
