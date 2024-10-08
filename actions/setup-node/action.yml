@@ -1,12 +1,6 @@
 name: Setup Node.js
 description: Setup Node.js
 inputs:
-  NPM_TOKEN:
-    description: 'NPM_TOKEN'
-    required: true
-  GHA_ACCESS_TOKEN:
-    description: 'GHA_ACCESS_TOKEN'
-    required: true
   directory:
     description: 'Project directory'
     required: false
@@ -30,8 +24,6 @@ runs:
       with:
         node-version-file: ${{ inputs.directory }}.nvmrc
         node-version: ${{ inputs.node_version }}
-        registry-url: https://npm-registry-proxy.pipedrive.tools
-        scope: "@pipedrive"
         cache: 'npm'
         cache-dependency-path: ${{ inputs.directory }}package-lock.json
 
@@ -42,15 +34,6 @@ runs:
       with:
         path: ${{ inputs.directory }}node_modules
         key: node-modules-${{ runner.os }}-${{ inputs.node_version || '' }}-${{ hashFiles('**/package-lock.json') }}
-
-    - name: Add git URLs
-      shell: bash
-      working-directory: ${{ inputs.directory }}
-      run: |
-        git config --global --add url."https://x-access-token:${{ inputs.GHA_ACCESS_TOKEN }}@github.com/".insteadOf "ssh://git@github.com/"
-        git config --global --add url."https://x-access-token:${{ inputs.GHA_ACCESS_TOKEN }}@github.com/".insteadOf "https://github.com/"
-        git config --global --add url."https://x-access-token:${{ inputs.GHA_ACCESS_TOKEN }}@github.com/".insteadOf "git@github.com:"
-        git config --global --add url."https://x-access-token:${{ inputs.GHA_ACCESS_TOKEN }}@github.com/".insteadOf "git+ssh://git@github.com/"
 
     - name: Validate context cypress
       id: validation-cypress
@@ -85,8 +68,6 @@ runs:
           echo "Running: npm $COMMAND $FLAGS";
           npm $COMMAND $FLAGS
       working-directory: ${{ inputs.directory }}
-      env:
-        NODE_AUTH_TOKEN: ${{ inputs.NPM_TOKEN }}
 
     - name: Validate context jest
       id: validation-jest
@@ -109,10 +90,3 @@ runs:
       with:
         path: ${{steps.validation-jest.outputs.path}}
         key: jest-cache-${{github.event.number}}
-
-    - name: Clean git config
-      if: inputs.skip-post-run == 'false'
-      uses: webiny/action-post-run@3.1.0
-      with:
-        run: git config --global --unset-all url."https://x-access-token:${{ inputs.GHA_ACCESS_TOKEN }}@github.com/".insteadOf
-        working-directory: ${{ inputs.directory }}

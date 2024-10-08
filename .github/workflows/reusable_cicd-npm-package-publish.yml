@@ -1,0 +1,203 @@
+name: NPM Package Publish
+on:
+  workflow_call:
+  # This workflow will be trigger in the context of pull_request labeled event
+    inputs:
+      revision:
+        description: The branch, tag or commit hash to checkout.
+        type: string
+        required: false
+
+      runner:
+        description: Label for GitHub-hosted runner to use. Defaults to ubuntu-latest
+        type: string
+        required: false
+        default: ubuntu-latest
+
+      version:
+        description: The version to bump to. Defaults to patch. Possible option [<newversion> | major | minor | patch | premajor | preminor | prepatch | prerelease | from-git]
+        type: string
+        required: false
+        default: patch
+
+      publish_timeout_seconds:
+        description: Seconds to wait before the attempt to publish the package times outs. Defaults to 180
+        type: number
+        default: 180
+        required: false
+
+    secrets:
+      NPM_PUBLIC_PUBLISH_TOKEN:
+        description: NPM token to use for publishing
+        required: true
+      PD_PUBLIC_GHA_BOT_APPLICATION_PRIVATE_KEY_PEM:
+        required: true      
+
+jobs:
+  package-publish:
+    runs-on: ${{ inputs.runner }}
+    steps:
+      - name: Checkout ${{ github.repository }}
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.revision || github.ref }}
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+          persist-credentials: false
+
+      - name: Checkout gha-setup
+        uses: actions/checkout@v4
+        with:
+          repository: pipedrive/gha-setup
+          path: gha-setup
+          ref: master
+          token: ${{ secrets.GHA_SETUP_ACCESS_TOKEN }}
+
+      - name: Set Git Config
+        uses: ./gha-setup/actions/set-git-config-gha
+
+      - name: Setup Node.js
+        uses: pipedrive-actions/github-actions-workflows/actions/setup-node@master
+
+      - name: Add Changelog Record
+        if: ${{github.event.pull_request.user.login == 'dependabot[bot]'}}
+        uses: actions/github-script@v7
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        with:
+          script: |
+            const fs = require('fs');
+            if (!fs.existsSync('CHANGELOG.md')) {
+              core.info('Repository without CHANGELOG.md');
+              return;
+              
+            }
+            
+            const regexp = /##\s\[Unreleased\](\n|###\s.*|-\s.*)+/
+            const current = fs.readFileSync('CHANGELOG.md', 'utf8');
+            if (regexp.test(current) ) {
+              const updated = current.replace(regexp, `## [Unreleased]\n\n### Changed\n\n- ${process.env.PR_TITLE}\n\n`)
+            
+              fs.writeFileSync('CHANGELOG.md', updated)
+              await exec.exec("git", ["commit", "-a", "-m 'Update CHANGELOG'","--no-verify"])
+            } else {
+              core.info("Changelog doesn't follow the expected format : ${regexp}")
+            }
+
+      - name: Bump Version
+        id: bump-version
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          echo "bump NPM module version: ${VERSION}"
+          
+          npm version "${VERSION}" --preid rc --commit-hooks false --git-tag-version=false
+          git add package.json package-lock.json
+          
+          semVersion=$(jq -r .version package.json)
+          git commit -m "${semVersion}" --no-verify
+          echo "version=v${semVersion}" >> "${GITHUB_OUTPUT}"
+
+      - name: Merge to BaseBranch
+        env:
+          GITHUB_BASE_REF: ${{ github.event.pull_request.base.ref }}
+          REVISION: ${{ github.event.pull_request.head.ref }}
+          VERSION: ${{ steps.bump-version.outputs.version }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          git fetch origin "${GITHUB_BASE_REF}"
+          git checkout "${GITHUB_BASE_REF}"
+          git merge --no-ff "${REVISION}" -m "Release ${VERSION} from PR #${PR_NUMBER}"
+
+      - name: Create git TAG
+        env:
+          VERSION: ${{ steps.bump-version.outputs.version }}
+        run: |
+            echo "Tagging merge commit with ${VERSION}"
+            git tag "${VERSION}"
+
+      - name: Get Pipedrive GitHub Actions Bot Token
+        uses: actions/create-github-app-token@v1
+        id: get-workflow-token
+        with:
+          app-id: ${{ vars.PD_PUBLIC_GHA_BOT_APPLICATION_ID }}
+          private-key: ${{ secrets.PD_PUBLIC_GHA_BOT_APPLICATION_PRIVATE_KEY_PEM }}
+          owner: ${{ github.repository_owner }}
+
+      - name: Push to GitHub
+        env:
+          GITHUB_BASE_REF: ${{ github.event.pull_request.base.ref }}
+          VERSION: ${{ steps.bump-version.outputs.version }}
+          REPO: ${{ github.repository }}
+          GITHUB_TOKEN: ${{ steps.get-workflow-token.outputs.token }}
+        run: |
+          git remote set-url origin https://x-access-token:${GITHUB_TOKEN}@github.com/${REPO}.git
+          if ! git push origin "${GITHUB_BASE_REF}" --tags --no-verify
+          then
+              echo "Deleting ${VERSION} tag from remote."
+              git push --delete origin "${VERSION}"
+              
+              _errorMessage="
+              Failed to push to origin branch ${GITHUB_BASE_REF}.
+              Please check branch protection configuration in GitHub https://github.com/pipedrive/${params.REPO_NAME}/settings/branches
+              See https://pipedrive.atlassian.net/wiki/spaces/SD/pages/231178497/How+to+publish+NPM+modules#HowtopublishNPMmodules-Setup for more details.
+              "
+            
+              echo "::error::${_errorMessage}"
+              exit 1
+          fi
+
+      - name: Create .npmrc for publishing
+        shell: bash
+        run: |
+          {
+            #  For multiple registry we need to add the registry to the .npmrc
+            # https://sevic.dev/npm-publish-github-actions/
+            # NPM can expand enviroment variables, this we avoid write the token in the filesystem
+            # shellcheck disable=SC2016
+            echo '//registry.npmjs.org/:_authToken=${NPM_TOKEN}'
+            echo "@pipedrive:registry=https://registry.npmjs.org"
+            echo "always-auth=true"
+          } > .npmrc
+
+      - name: Read package.json
+        id: read-package-json
+        shell: bash
+        run: |
+          PUBLISH_ACCESS=$(jq -r .publishConfig.access package.json)
+          echo "PUBLISH_ACCESS=${PUBLISH_ACCESS}"
+          echo "publish_access=${PUBLISH_ACCESS}" >> "$GITHUB_OUTPUT"
+          
+          PACKAGE_NAME=$(jq -r .name package.json)
+          echo "PACKAGE_NAME=${PACKAGE_NAME}"
+          echo "package_name=${PACKAGE_NAME}" >> "$GITHUB_OUTPUT"
+
+      - name: Publish to NPM
+        uses: pipedrive/gha-command-retry@v3
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_PUBLIC_PUBLISH_TOKEN }}
+          VERSION: ${{ inputs.version }}
+          PUBLISH_ACCESS: ${{ steps.read-package-json.outputs.publish_access }}
+        with:
+          timeout_seconds: ${{ inputs.publish_timeout_seconds }}
+          max_attempts: 3
+          shell: bash
+          command: |
+            # shellcheck disable=SC2016      
+            distTag=$([[ ${VERSION} == pre* ]] && echo "--tag=next" || echo "")
+            access=$([[ ${PUBLISH_ACCESS} = 'public' ]] && echo "--access=public" || echo "--access=restricted")
+            accessMessage=$([[ ${PUBLISH_ACCESS} = 'public' ]] && echo "public" || echo "private")
+            tagMessage=$([[ ${VERSION} == pre* ]] && echo " with tag next" || echo "")
+            
+            echo "Publishing new ${accessMessage} NPM module version${tagMessage}"
+            # Cannot use double quoting because of a bug in npm that assumes the "" as input
+            # shellcheck disable=SC2086
+            npm publish ${distTag} ${access}
+
+      - name: Delete Branch
+        # Delete remote branch may fail if repo is configured to automatically delete head branches.
+        continue-on-error: true
+        env:
+          BRANCH:  ${{ github.event.pull_request.head.ref }}
+        run: |
+          git push origin --delete "${BRANCH}" || true
