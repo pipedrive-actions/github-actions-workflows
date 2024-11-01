@@ -37,7 +37,7 @@ env:
 jobs:
   package-checks:
     name : Package Checks
-    uses: pipedrive-actions/github-actions-workflows/.github/workflows/reusable_cicd-npm-package-checks.yml@DTL-5919-checkout-only-necessary-action-directories-instead-of-whole-gha-setup
+    uses: pipedrive-actions/github-actions-workflows/.github/workflows/reusable_cicd-npm-package-checks.yml@master
     with:
       revision: ${{ inputs.revision }}
       runner: ${{ inputs.runner }}
@@ -46,7 +46,7 @@ jobs:
   package-test:
     needs: package-checks
     name: Package Test
-    uses: pipedrive-actions/github-actions-workflows/.github/workflows/reusable_cicd-npm-package-test.yml@DTL-5919-checkout-only-necessary-action-directories-instead-of-whole-gha-setup
+    uses: pipedrive-actions/github-actions-workflows/.github/workflows/reusable_cicd-npm-package-test.yml@master
     with:
       revision: ${{ needs.package-checks.outputs.revision }}
       supported_versions: ${{ inputs.supported_versions }}
@@ -60,7 +60,7 @@ jobs:
       - package-test
       - package-checks
     name: Package Publish
-    uses: pipedrive-actions/github-actions-workflows/.github/workflows/reusable_cicd-npm-package-publish.yml@DTL-5919-checkout-only-necessary-action-directories-instead-of-whole-gha-setup
+    uses: pipedrive-actions/github-actions-workflows/.github/workflows/reusable_cicd-npm-package-publish.yml@master
     with:
       revision: ${{inputs.revision }}
       version: ${{ needs.package-checks.outputs.version }}
