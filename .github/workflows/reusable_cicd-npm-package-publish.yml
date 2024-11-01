@@ -52,6 +52,8 @@ jobs:
           path: gha-setup
           ref: master
           token: ${{ secrets.GHA_SETUP_ACCESS_TOKEN }}
+          sparse-checkout: |
+            actions/set-git-config-gha
 
       - name: Set Git Config
         uses: ./gha-setup/actions/set-git-config-gha

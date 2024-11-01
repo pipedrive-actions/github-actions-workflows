@@ -80,6 +80,10 @@ jobs:
           path: gha-setup
           ref: master
           token: ${{ secrets.GHA_SETUP_ACCESS_TOKEN }}
+          sparse-checkout: |
+            actions/platform/build-code
+            actions/platform/run-unit-tests
+            actions/dispatch-tests
 
       - name: Build Source
         uses: ./gha-setup/actions/platform/build-code
@@ -131,6 +135,9 @@ jobs:
           path: gha-setup
           ref: master
           token: ${{ secrets.GHA_SETUP_ACCESS_TOKEN }}
+          sparse-checkout: |
+            actions/platform/build-code
+            actions/platform/run-unit-tests
 
       - name: Build Source
         uses: ./gha-setup/actions/platform/build-code
