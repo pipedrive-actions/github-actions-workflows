@@ -102,3 +102,6 @@ jobs:
       - name: Parse NPM Package Version
         id: npm-package-version
         uses: ./gha-setup/actions/npm-package-label-parser
+
+      - name: Set Git Config
+        uses: ./gha-setup/actions/set-git-config-gha
