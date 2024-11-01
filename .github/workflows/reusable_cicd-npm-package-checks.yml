@@ -64,6 +64,9 @@ jobs:
         with:
           github-token: ${{ steps.get-workflow-token.outputs.token }}
 
+      - name: Set Git Config
+        uses: ./gha-setup/actions/set-git-config-gha
+
       - name: Update Branch from master
         uses: actions/github-script@v7
         id: update-branch
@@ -102,6 +105,3 @@ jobs:
       - name: Parse NPM Package Version
         id: npm-package-version
         uses: ./gha-setup/actions/npm-package-label-parser
-
-      - name: Set Git Config
-        uses: ./gha-setup/actions/set-git-config-gha
