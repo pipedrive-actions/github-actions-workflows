@@ -54,6 +54,10 @@ jobs:
           path: gha-setup
           ref: master
           token: ${{ secrets.GHA_SETUP_ACCESS_TOKEN }}
+          sparse-checkout: |
+            actions/pull-request-check
+            actions/npm-package-checks
+            actions/npm-package-label-parser
 
       - name: Check Pull Request against defined rules
         uses: ./gha-setup/actions/pull-request-check
