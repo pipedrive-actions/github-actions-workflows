@@ -37,6 +37,15 @@ jobs:
   package-publish:
     runs-on: ${{ inputs.runner }}
     steps:
+      - name: Validate token configuration
+        if: ${{ !inputs.use_trusted_publisher }}
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_PUBLIC_PUBLISH_TOKEN }}
+        run: |
+          if [ -z "${NPM_TOKEN}" ]; then
+            echo "::error::NPM_PUBLIC_PUBLISH_TOKEN secret must be provided when use_trusted_publisher is false"
+            exit 1
+          fi
       - name: Checkout ${{ github.repository }}
         uses: actions/checkout@v4
         with:
