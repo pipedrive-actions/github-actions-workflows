@@ -31,18 +31,21 @@ on:
         type: string
         required: false
         default: ubuntu-latest
+      use_trusted_publisher:
+        description: Use NPM Trusted Publishers (OIDC) instead of NPM token. Requires trusted publisher registered on npmjs.com.
+        type: boolean
+        required: false
+        default: false
 env:
   platform: node
-
 jobs:
   package-checks:
-    name : Package Checks
+    name: Package Checks
     uses: pipedrive-actions/github-actions-workflows/.github/workflows/reusable_cicd-npm-package-checks.yml@master
     with:
       revision: ${{ inputs.revision }}
       runner: ${{ inputs.runner }}
     secrets: inherit
-
   package-test:
     needs: package-checks
     name: Package Test
@@ -54,7 +57,6 @@ jobs:
       timeout_minutes: ${{ inputs.timeout_minutes }}
       runner: ${{ inputs.runner }}
     secrets: inherit
-
   package-publish:
     needs:
       - package-test
@@ -66,4 +68,5 @@ jobs:
       version: ${{ needs.package-checks.outputs.version }}
       runner: ${{ inputs.runner }}
       publish_timeout_seconds: ${{ inputs.publish_timeout_seconds }}
+      use_trusted_publisher: ${{ inputs.use_trusted_publisher }}
     secrets: inherit
