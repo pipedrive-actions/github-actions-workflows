@@ -37,7 +37,7 @@ jobs:
         uses: actions/create-github-app-token@v3
         id: get-workflow-token
         with:
-          client-id: ${{ vars.PD_PUBLIC_GHA_BOT_APPLICATION_ID }}
+          client-id: ${{ vars.PD_PUBLIC_GHA_BOT_CLIENT_ID }}
           private-key: ${{ secrets.PD_PUBLIC_GHA_BOT_APPLICATION_PRIVATE_KEY_PEM }}
           owner: ${{ github.repository_owner }}
 
