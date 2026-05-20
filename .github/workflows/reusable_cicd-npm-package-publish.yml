@@ -36,6 +36,9 @@ on:
 jobs:
   package-publish:
     runs-on: ${{ inputs.runner }}
+    permissions:
+      id-token: write
+      contents: read
     steps:
       - name: Validate token configuration
         if: ${{ !inputs.use_trusted_publisher }}
@@ -158,6 +161,3 @@ jobs:
           BRANCH: ${{ github.event.pull_request.head.ref }}
         run: |
           git push origin --delete "${BRANCH}" || true
-    permissions:
-      id-token: write
-      contents: read
