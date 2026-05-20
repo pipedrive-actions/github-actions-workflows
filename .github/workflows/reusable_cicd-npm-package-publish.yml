@@ -75,7 +75,24 @@ jobs:
         env:
           PR_TITLE: ${{ github.event.pull_request.title }}
         with:
-          script: "const fs = require('fs');\nif (!fs.existsSync('CHANGELOG.md')) {\n  core.info('Repository without CHANGELOG.md');\n  return;\n  \n}\n\nconst regexp = /##\\s\\[Unreleased\\](\\n|###\\s.*|-\\s.*)+/\nconst current = fs.readFileSync('CHANGELOG.md', 'utf8');\nif (regexp.test(current) ) {\n  const updated = current.replace(regexp, `## [Unreleased]\\n\\n### Changed\\n\\n- ${process.env.PR_TITLE}\\n\\n`)\n\n  fs.writeFileSync('CHANGELOG.md', updated)\n  await exec.exec(\"git\", [\"commit\", \"-a\", \"-m 'Update CHANGELOG'\",\"--no-verify\"])\n} else {\n  core.info(\"Changelog doesn't follow the expected format : ${regexp}\")\n}\n"
+          script: |
+            const fs = require('fs');
+            if (!fs.existsSync('CHANGELOG.md')) {
+              core.info('Repository without CHANGELOG.md');
+              return;
+              
+            }
+            
+            const regexp = /##\s\[Unreleased\](\n|###\s.*|-\s.*)+/
+            const current = fs.readFileSync('CHANGELOG.md', 'utf8');
+            if (regexp.test(current) ) {
+              const updated = current.replace(regexp, `## [Unreleased]\n\n### Changed\n\n- ${process.env.PR_TITLE}\n\n`)
+            
+              fs.writeFileSync('CHANGELOG.md', updated)
+              await exec.exec("git", ["commit", "-a", "-m 'Update CHANGELOG'","--no-verify"])
+            } else {
+              core.info("Changelog doesn't follow the expected format : ${regexp}")
+            }
       - name: Bump Version
         id: bump-version
         env:
@@ -118,9 +135,25 @@ jobs:
           VERSION: ${{ steps.bump-version.outputs.version }}
           REPO: ${{ github.repository }}
           GITHUB_TOKEN: ${{ steps.get-workflow-token.outputs.token }}
-        run: "git remote set-url origin https://x-access-token:${GITHUB_TOKEN}@github.com/${REPO}.git\nif ! git push origin \"${GITHUB_BASE_REF}\" --tags --no-verify\nthen\n    echo \"Deleting ${VERSION} tag from remote.\"\n    git push --delete origin \"${VERSION}\"\n    \n    _errorMessage=\"\n    Failed to push to origin branch ${GITHUB_BASE_REF}.\n    Please check branch protection configuration in GitHub https://github.com/pipedrive/${params.REPO_NAME}/settings/branches\n    See https://pipedrive.atlassian.net/wiki/spaces/SD/pages/231178497/How+to+publish+NPM+modules#HowtopublishNPMmodules-Setup for more details.\n    \"\n  \n    echo \"::error::${_errorMessage}\"\n    exit 1\nfi\n"
+        run: |
+          git remote set-url origin https://x-access-token:${GITHUB_TOKEN}@github.com/${REPO}.git
+          if ! git push origin "${GITHUB_BASE_REF}" --tags --no-verify
+          then
+              echo "Deleting ${VERSION} tag from remote."
+              git push --delete origin "${VERSION}"
+              
+              _errorMessage="
+              Failed to push to origin branch ${GITHUB_BASE_REF}.
+              Please check branch protection configuration in GitHub https://github.com/pipedrive/${params.REPO_NAME}/settings/branches
+              See https://pipedrive.atlassian.net/wiki/spaces/SD/pages/231178497/How+to+publish+NPM+modules#HowtopublishNPMmodules-Setup for more details.
+              "
+            
+              echo "::error::${_errorMessage}"
+              exit 1
+          fi
       - name: Create .npmrc for publishing
         shell: bash
+        if: ${{ !inputs.use_trusted_publisher }}
         run: |
           {
             #  For multiple registry we need to add the registry to the .npmrc
@@ -131,7 +164,7 @@ jobs:
             echo "@pipedrive:registry=https://registry.npmjs.org"
             echo "always-auth=true"
           } > .npmrc
-        if: ${{ !inputs.use_trusted_publisher }}
+
       - name: Read package.json
         id: read-package-json
         shell: bash
@@ -153,7 +186,17 @@ jobs:
           timeout_seconds: ${{ inputs.publish_timeout_seconds }}
           max_attempts: 3
           shell: bash
-          command: "# shellcheck disable=SC2016      \ndistTag=$([[ ${VERSION} == pre* ]] && echo \"--tag=next\" || echo \"\")\naccess=$([[ ${PUBLISH_ACCESS} = 'public' ]] && echo \"--access=public\" || echo \"--access=restricted\")\naccessMessage=$([[ ${PUBLISH_ACCESS} = 'public' ]] && echo \"public\" || echo \"private\")\ntagMessage=$([[ ${VERSION} == pre* ]] && echo \" with tag next\" || echo \"\")\n\necho \"Publishing new ${accessMessage} NPM module version${tagMessage}\"\n# Cannot use double quoting because of a bug in npm that assumes the \"\" as input\n# shellcheck disable=SC2086\nnpm publish ${distTag} ${access}\n"
+          command: |
+            # shellcheck disable=SC2016      
+            distTag=$([[ ${VERSION} == pre* ]] && echo "--tag=next" || echo "")
+            access=$([[ ${PUBLISH_ACCESS} = 'public' ]] && echo "--access=public" || echo "--access=restricted")
+            accessMessage=$([[ ${PUBLISH_ACCESS} = 'public' ]] && echo "public" || echo "private")
+            tagMessage=$([[ ${VERSION} == pre* ]] && echo " with tag next" || echo "")
+            
+            echo "Publishing new ${accessMessage} NPM module version${tagMessage}"
+            # Cannot use double quoting because of a bug in npm that assumes the "" as input
+            # shellcheck disable=SC2086
+            npm publish ${distTag} ${access}
       - name: Delete Branch
         # Delete remote branch may fail if repo is configured to automatically delete head branches.
         continue-on-error: true
