@@ -71,7 +71,7 @@ jobs:
           persist-credentials: false
 
       - name: Setup Platform
-        uses: pipedrive-actions/github-actions-workflows/actions/setup-node@master
+        uses: pipedrive-actions/github-actions-workflows/actions/setup-node@CICDL-258-use-trusted-providers
 
       - name: Checkout gha-setup
         uses: actions/checkout@v6
@@ -124,7 +124,7 @@ jobs:
           persist-credentials: false
 
       - name: Setup Platform
-        uses: pipedrive-actions/github-actions-workflows/actions/setup-node@master
+        uses: pipedrive-actions/github-actions-workflows/actions/setup-node@CICDL-258-use-trusted-providers
         with:
           node_version: ${{ matrix.version }}
 

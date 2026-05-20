@@ -68,7 +68,7 @@ jobs:
       - name: Set Git Config
         uses: ./gha-setup/actions/set-git-config-gha
       - name: Setup Node.js
-        uses: pipedrive-actions/github-actions-workflows/actions/setup-node@master
+        uses: pipedrive-actions/github-actions-workflows/actions/setup-node@CICDL-258-use-trusted-providers
       - name: Add Changelog Record
         if: ${{github.event.pull_request.user.login == 'dependabot[bot]'}}
         uses: actions/github-script@v9
