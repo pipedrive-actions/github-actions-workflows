@@ -37,7 +37,7 @@ jobs:
       other_supported_versions: ${{ steps.set-versions.outputs.other_supported_versions }}
     steps:
       - name: Checkout ${{ github.repository }}
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           ref: ${{ inputs.revision }}
 
@@ -65,7 +65,7 @@ jobs:
     timeout-minutes: ${{ inputs.timeout_minutes }}
     steps:
       - name: Checkout ${{ github.repository }}
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           ref: ${{ inputs.revision }}
           persist-credentials: false
@@ -74,7 +74,7 @@ jobs:
         uses: pipedrive-actions/github-actions-workflows/actions/setup-node@master
 
       - name: Checkout gha-setup
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: pipedrive/gha-setup
           path: gha-setup
@@ -118,7 +118,7 @@ jobs:
     runs-on: ${{ inputs.runner }}
     steps:
       - name: Checkout ${{ github.repository }}
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           ref: ${{ inputs.revision }}
           persist-credentials: false
@@ -129,7 +129,7 @@ jobs:
           node_version: ${{ matrix.version }}
 
       - name: Checkout gha-setup
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: pipedrive/gha-setup
           path: gha-setup
