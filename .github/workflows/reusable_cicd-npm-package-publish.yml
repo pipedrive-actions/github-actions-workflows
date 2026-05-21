@@ -179,6 +179,7 @@ jobs:
       - name: Publish to NPM
         uses: pipedrive/gha-command-retry@v3
         env:
+          ## Not set NPM_TOKEN when using trusted publisher because in that flow that token is not needed
           NPM_TOKEN: ${{ !inputs.use_trusted_publisher && secrets.NPM_PUBLIC_PUBLISH_TOKEN || '' }}
           VERSION: ${{ inputs.version }}
           PUBLISH_ACCESS: ${{ steps.read-package-json.outputs.publish_access }}
