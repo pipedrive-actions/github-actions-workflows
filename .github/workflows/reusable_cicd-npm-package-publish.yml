@@ -22,11 +22,6 @@ on:
         type: number
         default: 180
         required: false
-      use_trusted_publisher:
-        description: Use NPM Trusted Publishers (OIDC) instead of NPM token. Requires trusted publisher registered on npmjs.com.
-        type: boolean
-        required: false
-        default: false
     secrets:
       PD_PUBLIC_GHA_BOT_APPLICATION_PRIVATE_KEY_PEM:
         required: true
