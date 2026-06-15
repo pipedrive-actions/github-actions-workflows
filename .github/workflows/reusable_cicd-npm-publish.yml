@@ -60,7 +60,7 @@ jobs:
     permissions:
       id-token: write
       contents: read
-    uses: pipedrive-actions/github-actions-workflows/.github/workflows/reusable_cicd-npm-package-publish.yml@master
+    uses: pipedrive-actions/github-actions-workflows/.github/workflows/reusable_cicd-npm-package-publish.yml@CICDL-378-remove-npm-public-publish-token
     with:
       revision: ${{inputs.revision }}
       version: ${{ needs.package-checks.outputs.version }}
