@@ -31,11 +31,6 @@ on:
         type: string
         required: false
         default: ubuntu-latest
-      use_trusted_publisher:
-        description: Use NPM Trusted Publishers (OIDC) instead of NPM token. Requires trusted publisher registered on npmjs.com.
-        type: boolean
-        required: false
-        default: false
 env:
   platform: node
 jobs:
@@ -71,5 +66,4 @@ jobs:
       version: ${{ needs.package-checks.outputs.version }}
       runner: ${{ inputs.runner }}
       publish_timeout_seconds: ${{ inputs.publish_timeout_seconds }}
-      use_trusted_publisher: ${{ inputs.use_trusted_publisher }}
     secrets: inherit

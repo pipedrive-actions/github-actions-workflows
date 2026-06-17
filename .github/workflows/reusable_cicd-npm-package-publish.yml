@@ -22,15 +22,7 @@ on:
         type: number
         default: 180
         required: false
-      use_trusted_publisher:
-        description: Use NPM Trusted Publishers (OIDC) instead of NPM token. Requires trusted publisher registered on npmjs.com.
-        type: boolean
-        required: false
-        default: false
     secrets:
-      NPM_PUBLIC_PUBLISH_TOKEN:
-        description: NPM token to use for publishing
-        required: false
       PD_PUBLIC_GHA_BOT_APPLICATION_PRIVATE_KEY_PEM:
         required: true
 jobs:
@@ -40,15 +32,6 @@ jobs:
       id-token: write
       contents: read
     steps:
-      - name: Validate token configuration
-        if: ${{ !inputs.use_trusted_publisher }}
-        env:
-          NPM_TOKEN: ${{ secrets.NPM_PUBLIC_PUBLISH_TOKEN }}
-        run: |
-          if [ -z "${NPM_TOKEN}" ]; then
-            echo "::error::NPM_PUBLIC_PUBLISH_TOKEN secret must be provided when use_trusted_publisher is false"
-            exit 1
-          fi
       - name: Checkout ${{ github.repository }}
         uses: actions/checkout@v6
         with:
@@ -151,20 +134,6 @@ jobs:
               echo "::error::${_errorMessage}"
               exit 1
           fi
-      - name: Create .npmrc for publishing
-        shell: bash
-        if: ${{ !inputs.use_trusted_publisher }}
-        run: |
-          {
-            #  For multiple registry we need to add the registry to the .npmrc
-            # https://sevic.dev/npm-publish-github-actions/
-            # NPM can expand enviroment variables, this we avoid write the token in the filesystem
-            # shellcheck disable=SC2016
-            echo '//registry.npmjs.org/:_authToken=${NPM_TOKEN}'
-            echo "@pipedrive:registry=https://registry.npmjs.org"
-            echo "always-auth=true"
-          } > .npmrc
-
       - name: Read package.json
         id: read-package-json
         shell: bash
@@ -179,8 +148,6 @@ jobs:
       - name: Publish to NPM
         uses: pipedrive/gha-command-retry@v3
         env:
-          ## Not set NPM_TOKEN when using trusted publisher because in that flow that token is not needed
-          NPM_TOKEN: ${{ !inputs.use_trusted_publisher && secrets.NPM_PUBLIC_PUBLISH_TOKEN || '' }}
           VERSION: ${{ inputs.version }}
           PUBLISH_ACCESS: ${{ steps.read-package-json.outputs.publish_access }}
         with:
